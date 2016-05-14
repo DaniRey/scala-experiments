@@ -9,35 +9,48 @@ import scala.util.Random
 //the zoo class hierarchy
 abstract class Animal(name: String) {
   def scream(): String
+
   def who() = name
+
+  def create(name: String): Animal
 }
+
 trait Herbivor extends Animal
+
 trait Carnivor extends Animal
+
 trait Omnivor extends Herbivor with Carnivor
 
-class Baer(name: String) extends Animal(name) with Omnivor{
+class Baer(name: String) extends Animal(name) with Omnivor {
   override def scream(): String = "roar"
+
+  override def create(name: String) = new Baer(name)
 }
+
 class Tiger(name: String) extends Animal(name) with Carnivor {
   override def scream(): String = "bruauaaaa"
+
+  override def create(name: String) = new Tiger(name)
 }
+
 class Cow(name: String) extends Animal(name) with Herbivor {
   override def scream(): String = "muuuu"
+
+  override def create(name: String) = new Cow(name)
 }
 
 class InvariantSeller[T <: Animal]
 
-class Seller[+T <: Animal] {
+class Seller[+T <: Animal](parent: T) {
+  //needs to be defined as "private[this]" List[T]
   private[this] var sold: List[T] = Nil
+
   def sell(): T = {
-    //why do I get a "class type required but T found"?
-    //it is not related to covariante +T, but happens for invariant type parameter T as well
-    val animal = new T(Random.nextString(10))
+    val name = Random.nextString(10)
+    val animal = parent.create(name).asInstanceOf[T]
     sold = animal :: sold
     animal
   }
-
-//  def sell(): T = classOf[T].getConstructor(Class[String]).newInstance(Random.nextString(10))
 }
 
 class InvariantShelter[T <: Animal]
@@ -65,6 +78,7 @@ object CoContraVariant extends App {
   animals = carnivors ::: animals
 
   def letThemScream(animals: List[Animal]) = animals.foreach(a => println(a.scream()))
+
   def isJimmy(a: Animal) = a.who() == "Jimmy"
 
   letThemScream(animals)
@@ -92,10 +106,10 @@ object CoContraVariant extends App {
 
   //compiles because Seller is covariant on its type parameter, this means a more specific type might be provided
   //if you ask for someone who can sell you "animals" it is ok, if you find someone who only sells Carnivors
-  var animalSeller: Seller[Animal] = new Seller[Carnivor]()
+  var animalSeller: Seller[Animal] = new Seller[Carnivor](new Tiger(""))
   val boughtAnimal: Animal = animalSeller.sell()
 
-  var carnivorSeller: Seller[Carnivor] = new Seller[Omnivor]()
+  var carnivorSeller: Seller[Carnivor] = new Seller[Omnivor](new Baer(""))
   val boughtCarnivor: Carnivor = carnivorSeller.sell()
 
   //won't compile because InvariantShelter is invariant on it's type parameter
