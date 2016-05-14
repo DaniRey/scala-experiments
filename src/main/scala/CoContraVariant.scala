@@ -28,15 +28,24 @@ class Cow(name: String) extends Animal(name) with Herbivor {
 class InvariantSeller[T <: Animal]
 
 class Seller[+T <: Animal] {
-  def sell(): T = new T(Random.nextString(10))
+  private[this] var sold: List[T] = Nil
+  def sell(): T = {
+    //why do I get a "class type required but T found"?
+    //it is not related to covariante +T, but happens for invariant type parameter T as well
+    val animal = new T(Random.nextString(10))
+    sold = animal :: sold
+    animal
+  }
+
+//  def sell(): T = classOf[T].getConstructor(Class[String]).newInstance(Random.nextString(10))
 }
 
 class InvariantShelter[T <: Animal]
 
 class Shelter[-T <: Animal] {
-  //needs to be defined as List[Animal]
-  //List[T] is not possible, because then the contravariant type T would appear in a covariant position
-  var animals: List[Animal] = Nil
+  //needs to be defined as "private[this]" List[T]
+  //public List[T] is not possible, because then the contravariant type T would appear in a covariant position
+  private[this] var animals: List[T] = Nil
 
   def house(animal: T): Unit = {
     animals = animal :: animals
