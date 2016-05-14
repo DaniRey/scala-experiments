@@ -1,3 +1,5 @@
+import scala.util.Random
+
 /**
   * Covariance and contravariance - see Scala Reference 3.5.2 and 4.5
   *
@@ -25,11 +27,21 @@ class Cow(name: String) extends Animal(name) with Herbivor {
 
 class InvariantSeller[T <: Animal]
 
-class Seller[+T <: Animal]
+class Seller[+T <: Animal] {
+  def sell(): T = new T(Random.nextString(10))
+}
 
 class InvariantShelter[T <: Animal]
 
-class Shelter[-T <: Animal]
+class Shelter[-T <: Animal] {
+  //needs to be defined as List[Animal]
+  //List[T] is not possible, because then the contravariant type T would appear in a covariant position
+  var animals: List[Animal] = Nil
+
+  def house(animal: T): Unit = {
+    animals = animal :: animals
+  }
+}
 
 object CoContraVariant extends App {
   val baer = new Baer("Jimmy")
@@ -72,6 +84,10 @@ object CoContraVariant extends App {
   //compiles because Seller is covariant on its type parameter, this means a more specific type might be provided
   //if you ask for someone who can sell you "animals" it is ok, if you find someone who only sells Carnivors
   var animalSeller: Seller[Animal] = new Seller[Carnivor]()
+  val boughtAnimal: Animal = animalSeller.sell()
+
+  var carnivorSeller: Seller[Carnivor] = new Seller[Omnivor]()
+  val boughtCarnivor: Carnivor = carnivorSeller.sell()
 
   //won't compile because InvariantShelter is invariant on it's type parameter
   //var carnivorShelter: InvariantShelter[Tiger] = new InvariantShelter[Animal]
@@ -79,5 +95,10 @@ object CoContraVariant extends App {
   //compiles because Shelter is contravariant on its type parameter, this means a more general type might be provided
   //if you look for a shelter for tigers, it is ok to find a shelter which can keep any kind of animals
   var tigerShelter: Shelter[Tiger] = new Shelter[Animal]()
+  tigerShelter.house(tiger)
+
+  //doesn't compile because tigerShelter is defined as Shelter[Tiger] and therefore
+  //house() as house(animal: Tiger), although the provided object is a Shelter[Animal]
+  //tigerShelter.house(baer)
 
 }
