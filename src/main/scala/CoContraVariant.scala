@@ -4,6 +4,9 @@ import scala.util.Random
   * Covariance and contravariance - see Scala Reference 3.5.2 and 4.5
   *
   * code is heavily inspired by http://blog.kamkor.me/Covariance-And-Contravariance-In-Scala/
+  *
+  * and use a function literal to the constructor for construction in Seller,
+  * inspired by http://stackoverflow.com/questions/18442813/structured-type-to-match-class-constructor
   */
 
 //the zoo class hierarchy
@@ -11,8 +14,6 @@ abstract class Animal(name: String) {
   def scream(): String
 
   def who() = name
-
-  def create(name: String): Animal
 }
 
 trait Herbivor extends Animal
@@ -23,31 +24,28 @@ trait Omnivor extends Herbivor with Carnivor
 
 class Baer(name: String) extends Animal(name) with Omnivor {
   override def scream(): String = "roar"
-
-  override def create(name: String) = new Baer(name)
 }
 
 class Tiger(name: String) extends Animal(name) with Carnivor {
   override def scream(): String = "bruauaaaa"
-
-  override def create(name: String) = new Tiger(name)
 }
 
 class Cow(name: String) extends Animal(name) with Herbivor {
   override def scream(): String = "muuuu"
-
-  override def create(name: String) = new Cow(name)
 }
 
 class InvariantSeller[T <: Animal]
 
-class Seller[+T <: Animal](parent: T) {
+class Seller[+T <: Animal](constructor: String => T) {
   //needs to be defined as "private[this]" List[T]
   private[this] var sold: List[T] = Nil
 
   def sell(): T = {
     val name = Random.nextString(10)
-    val animal = parent.create(name).asInstanceOf[T]
+//    initial idea, provide create method as part of type hierarchy
+//    the create method then simply call the constructor
+//    val animal = parent.create(name).asInstanceOf[T]
+    val animal = constructor(name)
     sold = animal :: sold
     animal
   }
@@ -106,10 +104,10 @@ object CoContraVariant extends App {
 
   //compiles because Seller is covariant on its type parameter, this means a more specific type might be provided
   //if you ask for someone who can sell you "animals" it is ok, if you find someone who only sells Carnivors
-  var animalSeller: Seller[Animal] = new Seller[Carnivor](new Tiger(""))
+  var animalSeller: Seller[Animal] = new Seller[Carnivor](new Tiger(_))
   val boughtAnimal: Animal = animalSeller.sell()
 
-  var carnivorSeller: Seller[Carnivor] = new Seller[Omnivor](new Baer(""))
+  var carnivorSeller: Seller[Carnivor] = new Seller[Omnivor](new Baer(_))
   val boughtCarnivor: Carnivor = carnivorSeller.sell()
 
   //won't compile because InvariantShelter is invariant on it's type parameter
