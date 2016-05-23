@@ -22,6 +22,11 @@ object StructuralTypes extends App {
     def z() = "b"
   }
 
+  case class C(x: Int = 23, t: String = "default") {
+    def y(something: String) = "something from Class C:" + something
+    def z() =  "c"
+  }
+
   object Printer {
     type Printable = {val x: Int; def y(what: String): String; def z(): String}
     def print(printable: Printable): Unit = {
@@ -31,8 +36,10 @@ object StructuralTypes extends App {
 
   val a = new A()
   val ba = new B()
+  val c = C()
 
   //will not compile, because a does not match the structural type
   //Printer(a)
   Printer.print(ba)
+  Printer.print(c)
 }
